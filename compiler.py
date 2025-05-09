@@ -7,6 +7,23 @@ from typing import Callable, NoReturn
 
 PAGE_SIZE = 65536  # webassembly native page size
 
+flag = ''
+
+def preproc(program):
+    for i in program.split('\n'):
+        try:
+            if i[0:8] == '#include':
+                if i.find('<') != -1 and i.find('>') != -1:
+                    name = i[i.index('<') + 1:i.index('>')]
+                    with open(flag+name, 'r', encoding='utf-8') as f:
+                        program = program.replace(i, f.read())
+                else:
+                    raise SyntaxError('invalid #include directive')
+        except IndexError:
+            pass
+        except FileNotFoundError as err:
+            raise err
+    return program
 
 def die(message: str, line: int | None = None) -> NoReturn:
     """Print the message with a traceback, along with a line number if supplied, and exit."""
@@ -828,4 +845,4 @@ if __name__ == "__main__":
     import fileinput
 
     with fileinput.input(encoding="utf-8") as fi:
-        compile("".join(fi))  # todo: make this line-at-a-time?
+        compile(preproc("".join(fi)))  # todo: make this line-at-a-time?
